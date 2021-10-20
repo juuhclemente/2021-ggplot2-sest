@@ -155,6 +155,35 @@ head(df_friends_info)
 .pull-right[
 &lt;img src="img/rlogos/hex-friends.png" width="25%" style="display: block; margin: auto;" /&gt;
 ]
+
+--- 
+class:
+
+# O operador %&gt;%, o "Pipe"
+
+Imagine uma receita que tenha as instruções: junte os ingredientes, misture e leve ao forno. Na forma usual do R, essas instruções provavelmente seriam assim:
+
+**forno(misture(junte(ingredientes)))**
+
+Dessa forma temos que pensar “de dentro para fora”. O primeiro comando que lemos é forno, sendo que essa é a última operação que será realizada.
+
+Com o operador pipe seria algo assim:
+
+**ingredientes %&gt;% junte %&gt;% misture %&gt;% forno**
+
+É mais intuitivo!
+
+--- 
+class:
+
+# O operador %&gt;%, o "Pipe"
+
+Para ficar mais fácil: pense no Pipe %&gt;% como um operador que efetua as operações à direita nos valores que estão à esquerda.
+
+Ou ainda, o operador %&gt;% passa o que está à esquerda como argumento para a operação da direita.
+
+**Atalho**: CTRL + SHIFT + M
+
 ---
 class: center, middle, inverse
 
@@ -278,6 +307,7 @@ df_friends_info %&gt;%
 ```
 
 &lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-8-1.png" style="display: block; margin: auto;" /&gt;
+
 ---
 class:
 
@@ -392,7 +422,7 @@ class:
 
 ```r
 df_friends_info %&gt;% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point() +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5) 
@@ -409,14 +439,14 @@ class:
 
 Podemos também adicionar **cores** aos pontos de acordo com uma 3ª variável:
 
-
 ```r
 df_friends_info %&gt;% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point(aes(colour = tipo_nota)) +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5)
 ```
+
 &lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-17-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
@@ -428,16 +458,161 @@ class:
 
 E definir as **formas** dos pontos de acordo com uma 3ª variável:
 
-
 ```r
 df_friends_info %&gt;% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point(aes(colour = tipo_nota, shape = tipo_nota), size = 2.5) +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5) 
 ```
 
 &lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-19-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+class:
+
+# Gráfico de Box-plot
+
+O **gráfico de Box-plot** é um diagrama de caixa que evidencia os quartis das variáveis, além de apontar eventuais outliers:
+
+```r
+ggplot(df_friends_info,
+       aes(x = factor(season), y = us_views_millions, fill = factor(season))) + 
+  geom_boxplot()
+```
+&lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-21-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+class:
+
+# Gráfico de Box-plot
+
+Para enriquecer nosso gráfico com novas camadas, vamos gerar tabelas auxiliares com:
+
+- *Média* e *mediana* de visualizações por temporada
+
+
+```r
+# Agrupa os dados para pegar a média e mediana
+df_friends_agrup &lt;- df_friends_info %&gt;% 
+  dplyr::group_by(season) %&gt;% 
+  dplyr::summarise(media_visu = mean(us_views_millions),
+                   mediana_visu = median(us_views_millions))
+```
+
+- *2 episódios mais assistidos* (outliers encontrados no boxplot anterior)
+
+
+```r
+# Seleciona os 2 episódios mais assistidos 
+top_2 &lt;- df_friends_info %&gt;% 
+  arrange(desc(us_views_millions)) %&gt;% 
+  select(season, title, us_views_millions) %&gt;% 
+  distinct() %&gt;%
+  head(2)  
+```
+
+---
+class:
+
+# Gráfico de Box-plot
+
+Vamos adicionar uma camada com pontos com a *média de visualizações*:
+
+```r
+gg &lt;- ggplot(df_friends_info, aes(x = factor(season),  y = us_views_millions, 
+                            fill = factor(season))) + 
+  geom_boxplot() +
+  geom_point(data = df_friends_agrup, aes(x = factor(season), y = media_visu), 
+             colour = "yellow", size = 2)
+```
+
+&lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-25-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# Gráfico de Box-plot
+
+Agora, adicionaremos uma *camada* que exibe a mediana como texto:
+
+```r
+gg2 &lt;- gg +
+  geom_text(data = df_friends_agrup, 
+             aes(x = factor(season), y = mediana_visu, 
+                 label = format(mediana_visu, digits = 1, nsmall = 1)),
+             fontface = "bold", size = 3, vjust = -0.5)
+```
+
+&lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-27-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# Gráfico de Box-plot
+
+Adicionaremos também uma *camada* com o título dos 2 episódios outliers
+
+```r
+gg3 &lt;- gg2 +
+  geom_label(data = top_2, 
+             aes(x = factor(season), y = us_views_millions, 
+                 label = title),
+             fill = "white", size = 2.5)
+```
+
+&lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-29-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+class:
+
+# Gráfico de Box-plot
+
+## [Hands On]
+
+- No script de apoio, gere os mesmos gráficos mostrados aqui :)
+
+- Altere o gráfico para mostrar o título dos 3 episódios mais visualizados
+
+---
+# Gráfico de Box-plot
+
+
+```r
+top_3 &lt;- df_friends_info %&gt;% 
+  arrange(desc(us_views_millions)) %&gt;% 
+  select(season, title, us_views_millions) %&gt;% 
+  distinct() %&gt;% head(3)  
+
+gg2 + geom_label(data = top_3, 
+             aes(x = factor(season), y = us_views_millions, label = title),
+             fill = "white", size = 2.5)
+```
+
+&lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-31-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+class:
+
+# Gráfico de Linhas
+
+Vamos utilizar o **gráfico de linhas** para visualizar o volume de visualizações por data de lançamento dos episódios:
+
+```r
+gglinhas &lt;- df_friends_info %&gt;% 
+  ggplot() +
+  geom_line(aes(x = air_date, y = us_views_millions, color = factor(season))) +
+  theme_dark()
+```
+
+&lt;img src="apresentacao-aula-2_files/figure-html/unnamed-chunk-33-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+class:
+
+# Salvando e exportando os gráficos
+
+Para exportar qualquer um dos gráficos gerados, podemos usar a função **ggsave**
+
+```r
+ggsave("graf_linhas.png", plot = gglinhas)
+```
 
 ---
 class:    
@@ -451,6 +626,8 @@ class:
 - [Cheatsheets RStudio](https://www.rstudio.com/resources/cheatsheets/)
 
 - Apresentação feita com o pacote [xaringan](https://github.com/yihui/xaringan), e o tema `metropolis` modificado por [Bea Milz](https://beatrizmilz.com).
+
+- Apresentação inspirada na apresentação da [Letícia Thomaz](https://lodthomaz.github.io/ggplot2_RLadiesSP/)
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="libs/remark-latest.min.js"></script>

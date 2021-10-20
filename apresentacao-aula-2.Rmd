@@ -83,7 +83,6 @@ class:
 
 ```{r echo=FALSE, , fig.cap="Art by <a href='https://github.com/allisonhorst/stats-illustrations'>Allison Horst</a>", out.width="40%", fig.show='hold',fig.align='center'}
 knitr::include_graphics("img/horst/ggplot2_obra_prima_pt.png")
-
 ```
 
 ---
@@ -151,6 +150,35 @@ head(df_friends_info)
 knitr::include_graphics("img/rlogos/hex-friends.png")
 ```
 ]
+
+--- 
+class:
+
+# O operador %>%, o "Pipe"
+
+Imagine uma receita que tenha as instruções: junte os ingredientes, misture e leve ao forno. Na forma usual do R, essas instruções provavelmente seriam assim:
+
+**forno(misture(junte(ingredientes)))**
+
+Dessa forma temos que pensar “de dentro para fora”. O primeiro comando que lemos é forno, sendo que essa é a última operação que será realizada.
+
+Com o operador pipe seria algo assim:
+
+**ingredientes %>% junte %>% misture %>% forno**
+
+É mais intuitivo!
+
+--- 
+class:
+
+# O operador %>%, o "Pipe"
+
+Para ficar mais fácil: pense no Pipe %>% como um operador que efetua as operações à direita nos valores que estão à esquerda.
+
+Ou ainda, o operador %>% passa o que está à esquerda como argumento para a operação da direita.
+
+**Atalho**: CTRL + SHIFT + M
+
 ---
 class: center, middle, inverse
 
@@ -283,6 +311,7 @@ df_friends_info %>%
   theme_bw() +
   labs(title = "Alcance das temporadas de Friends")
 ```
+
 ---
 class:
 
@@ -414,7 +443,7 @@ class:
 
 ```{r, eval=FALSE, tidy=FALSE}
 df_friends_info %>% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point() +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5) 
@@ -422,7 +451,7 @@ df_friends_info %>%
 
 ```{r echo=FALSE, fig.align='center', fig.dim=c(6,4)}
 df_friends_info %>% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point() +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5)
@@ -436,17 +465,17 @@ class:
 ## Bonus
 
 Podemos também adicionar **cores** aos pontos de acordo com uma 3ª variável:
-
 ```{r, eval=FALSE, tidy=FALSE}
 df_friends_info %>% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point(aes(colour = tipo_nota)) +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5)
 ```
+
 ```{r echo=FALSE, fig.align='center', fig.dim=c(6,4)}
 df_friends_info %>% 
-  ggplot(aes(x = factor(season),  y = us_views_millions)) + 
+  ggplot(aes(x = season,  y = us_views_millions)) + 
   geom_point(aes(colour = tipo_nota)) +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5) 
@@ -460,10 +489,9 @@ class:
 ## Bonus
 
 E definir as **formas** dos pontos de acordo com uma 3ª variável:
-
 ```{r, eval=FALSE, tidy=FALSE}
 df_friends_info %>% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point(aes(colour = tipo_nota, shape = tipo_nota), size = 2.5) +
   geom_smooth(formula = y ~ poly(x, 3), method = "lm",
               colour = "magenta3", size = 1.5) 
@@ -471,10 +499,191 @@ df_friends_info %>%
 
 ```{r echo=FALSE, fig.align='center', fig.dim=c(6,4)}
 df_friends_info %>% 
-  ggplot(aes(x = factor(season), y = us_views_millions)) + 
+  ggplot(aes(x = season, y = us_views_millions)) + 
   geom_point(aes(colour = tipo_nota, shape = tipo_nota), size = 2.5) +
-  geom_smooth(formula = y ~ poly(x, 3), method = "lm",
+  geom_smooth(method = "lm", formula = y ~ poly(x, 3), 
               colour = "magenta3", size = 1.5)
+```
+
+---
+class:
+
+# Gráfico de Box-plot
+
+O **gráfico de Box-plot** é um diagrama de caixa que evidencia os quartis das variáveis, além de apontar eventuais outliers:
+```{r eval=FALSE, tidy=FALSE}
+ggplot(df_friends_info,
+       aes(x = factor(season), y = us_views_millions, fill = factor(season))) + 
+  geom_boxplot()
+```
+```{r echo=FALSE, fig.align='center', fig.dim=c(7,4.8)}
+ggplot(df_friends_info,
+       aes(x = factor(season), 
+           y = us_views_millions,  
+           fill = factor(season))) + 
+  geom_boxplot()
+```
+
+---
+class:
+
+# Gráfico de Box-plot
+
+Para enriquecer nosso gráfico com novas camadas, vamos gerar tabelas auxiliares com:
+
+- *Média* e *mediana* de visualizações por temporada
+
+```{r}
+# Agrupa os dados para pegar a média e mediana
+df_friends_agrup <- df_friends_info %>% 
+  dplyr::group_by(season) %>% 
+  dplyr::summarise(media_visu = mean(us_views_millions),
+                   mediana_visu = median(us_views_millions))
+```
+
+- *2 episódios mais assistidos* (outliers encontrados no boxplot anterior)
+
+```{r}
+# Seleciona os 2 episódios mais assistidos 
+top_2 <- df_friends_info %>% 
+  arrange(desc(us_views_millions)) %>% 
+  select(season, title, us_views_millions) %>% 
+  distinct() %>%
+  head(2)  
+```
+
+---
+class:
+
+# Gráfico de Box-plot
+
+Vamos adicionar uma camada com pontos com a *média de visualizações*:
+```{r, eval=FALSE, tidy=FALSE}
+gg <- ggplot(df_friends_info, aes(x = factor(season),  y = us_views_millions, 
+                            fill = factor(season))) + 
+  geom_boxplot() +
+  geom_point(data = df_friends_agrup, aes(x = factor(season), y = media_visu), 
+             colour = "yellow", size = 2)
+```
+
+```{r echo=FALSE, fig.align='center', fig.dim=c(7,4.8)}
+gg <- ggplot(df_friends_info, aes(x = factor(season),  y = us_views_millions, 
+                            fill = factor(season))) + 
+  geom_boxplot() +
+  geom_point(data = df_friends_agrup, aes(x = factor(season), y = media_visu), 
+             colour = "yellow", size = 2)
+
+print(gg)
+```
+
+---
+# Gráfico de Box-plot
+
+Agora, adicionaremos uma *camada* que exibe a mediana como texto:
+```{r, eval=FALSE, tidy=FALSE}
+gg2 <- gg +
+  geom_text(data = df_friends_agrup, 
+             aes(x = factor(season), y = mediana_visu, 
+                 label = format(mediana_visu, digits = 1, nsmall = 1)),
+             fontface = "bold", size = 3, vjust = -0.5)
+```
+
+```{r echo=FALSE, fig.align='center', fig.dim=c(7,4.5)}
+gg2 <- gg +
+  geom_text(data = df_friends_agrup, 
+             aes(x = factor(season), y = mediana_visu, 
+                 label = format(mediana_visu, digits = 1, nsmall = 1)),
+             fontface = "bold", size = 3, vjust = -0.5)
+print(gg2)
+```
+
+---
+# Gráfico de Box-plot
+
+Adicionaremos também uma *camada* com o título dos 2 episódios outliers
+```{r, eval=FALSE, tidy=FALSE}
+gg3 <- gg2 +
+  geom_label(data = top_2, 
+             aes(x = factor(season), y = us_views_millions, 
+                 label = title),
+             fill = "white", size = 2.5)
+```
+
+```{r echo=FALSE, fig.align='center', fig.dim=c(7,4.5)}
+gg3 <- gg2 +
+  geom_label(data = top_2, 
+             aes(x = factor(season), y = us_views_millions, 
+                 label = title),
+             fill = "white", size = 2.5)
+print(gg3)
+```
+
+---
+class:
+
+# Gráfico de Box-plot
+
+## [Hands On]
+
+- No script de apoio, gere os mesmos gráficos mostrados aqui :)
+
+- Altere o gráfico para mostrar o título dos 3 episódios mais visualizados
+
+---
+# Gráfico de Box-plot
+
+```{r, eval=FALSE, tidy=FALSE}
+top_3 <- df_friends_info %>% 
+  arrange(desc(us_views_millions)) %>% 
+  select(season, title, us_views_millions) %>% 
+  distinct() %>% head(3)  
+
+gg2 + geom_label(data = top_3, 
+             aes(x = factor(season), y = us_views_millions, label = title),
+             fill = "white", size = 2.5)
+```
+
+```{r echo=FALSE, fig.align='center', fig.dim=c(7,4.5)}
+top_3 <- df_friends_info %>% 
+  arrange(desc(us_views_millions)) %>% 
+  select(season, title, us_views_millions) %>% 
+  distinct() %>% head(3) 
+
+gg2 +
+  geom_label(data = top_3, 
+             aes(x = factor(season), y = us_views_millions, 
+                 label = title),
+             fill = "white", size = 2.5)
+```
+
+---
+class:
+
+# Gráfico de Linhas
+
+Vamos utilizar o **gráfico de linhas** para visualizar o volume de visualizações por data de lançamento dos episódios:
+```{r eval=FALSE, tidy=FALSE}
+gglinhas <- df_friends_info %>% 
+  ggplot() +
+  geom_line(aes(x = air_date, y = us_views_millions, color = factor(season))) +
+  theme_dark()
+```
+
+```{r echo=FALSE, fig.align='center', fig.dim=c(7,4.5)}
+df_friends_info %>% 
+  ggplot() +
+  geom_line(aes(x = air_date, y = us_views_millions, color = factor(season))) +
+  theme_dark()
+```
+
+---
+class:
+
+# Salvando e exportando os gráficos
+
+Para exportar qualquer um dos gráficos gerados, podemos usar a função **ggsave**
+```{r eval=FALSE, tidy=FALSE}
+ggsave("graf_linhas.png", plot = gglinhas)
 ```
 
 ---
@@ -489,3 +698,5 @@ class:
 - [Cheatsheets RStudio](https://www.rstudio.com/resources/cheatsheets/)
 
 - Apresentação feita com o pacote [xaringan](https://github.com/yihui/xaringan), e o tema `metropolis` modificado por [Bea Milz](https://beatrizmilz.com).
+
+- Apresentação inspirada na apresentação da [Letícia Thomaz](https://lodthomaz.github.io/ggplot2_RLadiesSP/)
